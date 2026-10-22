@@ -1,6 +1,29 @@
+# Version control
 .git
+.gitignore
+
+# Virtual environments
 .venv
+venv
+
+# Python bytecode
 __pycache__
 *.pyc
-data
-.env
+*.pyo
+
+# SQLite database (will be created fresh or mounted as a volume)
+data/
+
+# IDE and OS files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Docker files (no need to copy these into the image)
+Dockerfile
+Dockerfile.slim
+.dockerignore
+
+# Documentation
+README.md
