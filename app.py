@@ -5,6 +5,7 @@ Features:
     - Add books with title, author, student name, and student ID.
     - View all books in a table.
     - Search books by title, author, or student name.
+    - Track due dates and highlight overdue books.
     - Mark issued books as returned.
     - Delete books from the tracker.
     - Data is stored in SQLite for persistence.
@@ -12,6 +13,7 @@ Features:
 
 import os
 import sqlite3
+from datetime import date, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash
 
 # ---------------------------------------------------------------------------
@@ -42,15 +44,25 @@ def init_db():
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS books (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            title       TEXT    NOT NULL,
-            author      TEXT    NOT NULL,
-            student_name TEXT   NOT NULL,
-            student_id  TEXT    NOT NULL,
-            status      TEXT    NOT NULL DEFAULT 'Issued'
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            title        TEXT    NOT NULL,
+            author       TEXT    NOT NULL,
+            student_name TEXT    NOT NULL,
+            student_id   TEXT    NOT NULL,
+            status       TEXT    NOT NULL DEFAULT 'Issued',
+            issued_date  TEXT,
+            due_date     TEXT
         )
         """
     )
+
+    # If the table already existed without the new columns, add them.
+    for column in ("issued_date TEXT", "due_date TEXT"):
+        try:
+            conn.execute(f"ALTER TABLE books ADD COLUMN {column}")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
     conn.commit()
     conn.close()
 
@@ -64,8 +76,9 @@ init_db()
 # ---------------------------------------------------------------------------
 @app.route("/")
 def index():
-    """Home page – show the search form and all books (or filtered results)."""
+    """Home page – show dashboard stats, the search form, and all books."""
     search_query = request.args.get("search", "").strip()
+    today = date.today().isoformat()
     conn = get_db()
 
     if search_query:
@@ -82,8 +95,23 @@ def index():
     else:
         books = conn.execute("SELECT * FROM books ORDER BY id DESC").fetchall()
 
+    # Dashboard statistics
+    stats = conn.execute(
+        """
+        SELECT
+            COUNT(*)                                               AS total,
+            SUM(CASE WHEN status = 'Issued'   THEN 1 ELSE 0 END)  AS issued,
+            SUM(CASE WHEN status = 'Returned'  THEN 1 ELSE 0 END) AS returned,
+            SUM(CASE WHEN status = 'Issued' AND due_date < ? THEN 1 ELSE 0 END) AS overdue
+        FROM books
+        """,
+        (today,),
+    ).fetchone()
+
     conn.close()
-    return render_template("index.html", books=books, search_query=search_query)
+    return render_template(
+        "index.html", books=books, search_query=search_query, stats=stats, today=today
+    )
 
 
 @app.route("/add", methods=["POST"])
@@ -100,9 +128,12 @@ def add_book():
         return redirect(url_for("index"))
 
     conn = get_db()
+    today = date.today()
+    due = today + timedelta(days=14)
     conn.execute(
-        "INSERT INTO books (title, author, student_name, student_id) VALUES (?, ?, ?, ?)",
-        (title, author, student_name, student_id),
+        """INSERT INTO books (title, author, student_name, student_id, issued_date, due_date)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (title, author, student_name, student_id, today.isoformat(), due.isoformat()),
     )
     conn.commit()
     conn.close()
