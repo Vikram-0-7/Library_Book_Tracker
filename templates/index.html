@@ -24,6 +24,26 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Dashboard Stats -->
+        <section class="dashboard">
+            <div class="stat-card">
+                <span class="stat-number">{{ stats.total or 0 }}</span>
+                <span class="stat-label">Total Books</span>
+            </div>
+            <div class="stat-card stat-issued">
+                <span class="stat-number">{{ stats.issued or 0 }}</span>
+                <span class="stat-label">Issued</span>
+            </div>
+            <div class="stat-card stat-returned">
+                <span class="stat-number">{{ stats.returned or 0 }}</span>
+                <span class="stat-label">Returned</span>
+            </div>
+            <div class="stat-card stat-overdue">
+                <span class="stat-number">{{ stats.overdue or 0 }}</span>
+                <span class="stat-label">Overdue</span>
+            </div>
+        </section>
+
         <!-- Add Book Form -->
         <section class="card">
             <h2>Add a New Book</h2>
@@ -69,18 +89,29 @@
                             <th>Author</th>
                             <th>Student Name</th>
                             <th>Student ID</th>
+                            <th>Due Date</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for book in books %}
-                        <tr>
+                        <tr class="{{ 'overdue-row' if book.status == 'Issued' and book.due_date and book.due_date < today else '' }}">
                             <td>{{ book.id }}</td>
                             <td>{{ book.title }}</td>
                             <td>{{ book.author }}</td>
                             <td>{{ book.student_name }}</td>
                             <td>{{ book.student_id }}</td>
+                            <td>
+                                {% if book.due_date %}
+                                    {{ book.due_date }}
+                                    {% if book.status == 'Issued' and book.due_date < today %}
+                                        <span class="badge badge-overdue">Overdue</span>
+                                    {% endif %}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
                             <td>
                                 <span class="badge badge-{{ 'issued' if book.status == 'Issued' else 'returned' }}">
                                     {{ book.status }}
