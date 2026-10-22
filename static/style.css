@@ -64,9 +64,31 @@ input[type="text"] {
     transition: border-color 0.2s;
 }
 
+label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #566573;
+}
+
+select {
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.95rem;
+}
+
 input[type="text"]:focus {
     outline: none;
     border-color: #3498db;
+}
+
+input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible {
+    outline: 3px solid rgba(52, 152, 219, 0.4);
+    outline-offset: 2px;
 }
 
 .search-form {
@@ -255,6 +277,14 @@ tbody tr:hover {
     color: #999;
     padding: 24px 0;
     font-style: italic;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
 }
 
 /* ===== Footer ===== */

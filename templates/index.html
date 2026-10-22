@@ -49,14 +49,30 @@
             <h2>Add a New Book</h2>
             <form method="POST" action="{{ url_for('add_book') }}">
                 <div class="form-grid">
-                    <input type="text" name="title" placeholder="Book Title" required />
-                    <input type="text" name="author" placeholder="Author" required />
-                    <input type="text" name="student_name" placeholder="Student Name" required />
-                    <input type="text" name="student_id" placeholder="Student ID" required />
+                    <label>Book Title<input type="text" name="title" maxlength="120" placeholder="Book Title" required /></label>
+                    <label>Author<input type="text" name="author" maxlength="120" placeholder="Author" required /></label>
+                    <label>Student Name<input type="text" name="student_name" maxlength="120" placeholder="Student Name" required /></label>
+                    <label>Student ID<input type="text" name="student_id" maxlength="120" placeholder="Student ID" required /></label>
                 </div>
                 <button type="submit" class="btn btn-primary">Add Book</button>
             </form>
         </section>
+
+        {% if edit_book %}
+        <section class="card" id="edit-book">
+            <h2>Edit Book #{{ edit_book.id }}</h2>
+            <form method="POST" action="{{ url_for('edit_book', book_id=edit_book.id) }}">
+                <div class="form-grid">
+                    <label>Book Title<input type="text" name="title" maxlength="120" value="{{ edit_book.title }}" required /></label>
+                    <label>Author<input type="text" name="author" maxlength="120" value="{{ edit_book.author }}" required /></label>
+                    <label>Student Name<input type="text" name="student_name" maxlength="120" value="{{ edit_book.student_name }}" required /></label>
+                    <label>Student ID<input type="text" name="student_id" maxlength="120" value="{{ edit_book.student_id }}" required /></label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </section>
+        {% endif %}
 
         <!-- Search Bar -->
         <section class="card">
@@ -69,9 +85,15 @@
                     value="{{ search_query }}"
                 />
                 <button type="submit" class="btn btn-primary">Search</button>
+                <select name="status" aria-label="Filter by status">
+                    {% for option in ['All', 'Issued', 'Returned', 'Overdue'] %}
+                        <option value="{{ option }}" {% if status_filter == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
                 {% if search_query %}
                     <a href="{{ url_for('index') }}" class="btn btn-secondary">Clear</a>
                 {% endif %}
+                <a href="{{ url_for('export_books') }}" class="btn btn-secondary">Export CSV</a>
             </form>
         </section>
 
@@ -90,6 +112,7 @@
                             <th>Student Name</th>
                             <th>Student ID</th>
                             <th>Due Date</th>
+                            <th>Returned Date</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -112,12 +135,14 @@
                                     —
                                 {% endif %}
                             </td>
+                            <td>{{ book.returned_date or '—' }}</td>
                             <td>
                                 <span class="badge badge-{{ 'issued' if book.status == 'Issued' else 'returned' }}">
                                     {{ book.status }}
                                 </span>
                             </td>
                             <td class="actions">
+                                <a href="{{ url_for('index', edit=book.id) }}" class="btn btn-secondary btn-sm" aria-label="Edit {{ book.title }}">Edit</a>
                                 {% if book.status == 'Issued' %}
                                 <form method="POST" action="{{ url_for('return_book', book_id=book.id) }}">
                                     <button type="submit" class="btn btn-success btn-sm">Return</button>
@@ -135,6 +160,17 @@
             </div>
             {% else %}
                 <p class="empty-state">No books found. Add one above!</p>
+            {% endif %}
+            {% if total_pages > 1 %}
+            <nav class="pagination" aria-label="Book pages">
+                {% if page > 1 %}
+                    <a class="btn btn-secondary btn-sm" href="{{ url_for('index', search=search_query, status=status_filter, page=page - 1) }}">Previous</a>
+                {% endif %}
+                <span>Page {{ page }} of {{ total_pages }}</span>
+                {% if page < total_pages %}
+                    <a class="btn btn-secondary btn-sm" href="{{ url_for('index', search=search_query, status=status_filter, page=page + 1) }}">Next</a>
+                {% endif %}
+            </nav>
             {% endif %}
         </section>
 
