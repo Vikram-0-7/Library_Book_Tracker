@@ -21,7 +21,8 @@ app = Flask(__name__)
 app.secret_key = "library-secret-key"  # Needed for flash messages
 
 # Store the database in a "data" directory so it can be mounted as a Docker volume.
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+# The path is configurable via the DATA_DIR environment variable.
+DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data"))
 os.makedirs(DATA_DIR, exist_ok=True)
 DATABASE = os.path.join(DATA_DIR, "library.db")
 
@@ -133,6 +134,18 @@ def delete_book(book_id):
 
     flash("Book deleted.", "success")
     return redirect(url_for("index"))
+
+
+@app.route("/health")
+def health():
+    """Health check endpoint for Docker HEALTHCHECK."""
+    try:
+        conn = get_db()
+        count = conn.execute("SELECT COUNT(*) FROM books").fetchone()[0]
+        conn.close()
+        return {"status": "healthy", "books": count}, 200
+    except Exception as e:
+        return {"status": "unhealthy", "error": str(e)}, 500
 
 
 # ---------------------------------------------------------------------------
